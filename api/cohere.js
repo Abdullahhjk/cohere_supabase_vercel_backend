@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     // Default: fetch Cohere key by type
     const { data: cohereKey, error: rpcError } = await supabase
-      .rpc('getCohereAPI', { type: type || 2 });
+      .rpc('getcohereapi', { type: type || 2 });
 
     if (rpcError || !cohereKey) {
       console.error('RPC error:', rpcError);
