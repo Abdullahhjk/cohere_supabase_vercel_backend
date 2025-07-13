@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import axios from 'axios';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -12,30 +11,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt, type } = req.body;
+    const { type, keyName } = req.body;
 
+    // Handle special keys
+    if (keyName === 'SUPABASE_ANON_KEY') {
+      return res.status(200).json({ key: process.env.VITE_SUPABASE_ANON_KEY });
+    }
+
+    if (keyName === 'SUPABASE_URL') {
+      return res.status(200).json({ key: process.env.VITE_SUPABASE_URL });
+    }
+
+    // Default: fetch Cohere key by type
     const { data: cohereKey, error: rpcError } = await supabase
       .rpc('getCohereAPI', { type: type || 2 });
 
     if (rpcError || !cohereKey) {
       console.error('RPC error:', rpcError);
-      return res.status(500).json({ error: 'Failed to retrieve Cohere key' });
+      return res.status(500).json({ error: 'Failed to retrieve key' });
     }
 
-    const response = await axios.post('https://api.cohere.ai/generate', {
-      model: 'command',
-      prompt,
-      max_tokens: 100
-    }, {
-      headers: {
-        'Authorization': `Bearer ${cohereKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    return res.status(200).json({ key: cohereKey });
 
-    res.status(200).json(response.data);
   } catch (err) {
-    console.error('Cohere API error:', err.message);
-    res.status(500).json({ error: 'Cohere request failed' });
+    console.error('Key fetch error:', err.message);
+    res.status(500).json({ error: 'Key retrieval failed' });
   }
 }
